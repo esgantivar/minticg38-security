@@ -3,12 +3,15 @@ package tutorial.mintic.security.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import tutorial.mintic.security.models.Role;
 import tutorial.mintic.security.models.User;
+import tutorial.mintic.security.repositories.RoleRepository;
 import tutorial.mintic.security.repositories.UserRepository;
 import tutorial.mintic.security.utils.Utils;
 
 import java.util.List;
-
+import java.util.Optional;
 
 
 @RestController
@@ -17,17 +20,27 @@ public class UserController {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private RoleRepository roleRepository;
 
     @GetMapping("")
-    public List<User> getAll() {
-        return this.userRepository.findAll();
+    public List<User> getAll(@RequestParam("term") Optional<String> term) {
+        if (term.isPresent()) {
+            return this.userRepository.findByMatchUsername(term.get());
+        } else {
+            return this.userRepository.findAll();
+        }
     }
 
     @PostMapping
-    public User create(@RequestBody User data) {
+    public User create(@RequestBody User data, @RequestParam("idRole") Optional<String> idRole) {
         /*
         upsert - > update or insert
          */
+        Role role = null;
+        if(idRole.isPresent()) {
+            role = this.roleRepository.findById(idRole.get()).orElse(null);
+        }
         String encryptedPassword = Utils.encryptSHA256(data.getPassword());
         data.setPassword(encryptedPassword);
         List<User> users = this.userRepository.findByUsername(data.getUsername());
@@ -35,10 +48,21 @@ public class UserController {
             User currentUser = users.get(0);
             currentUser.setEmail(data.getEmail());
             currentUser.setPassword(data.getPassword());
+            currentUser.setRole(role);
             return this.userRepository.save(currentUser);
         } else {
+            data.setRole(role);
             return this.userRepository.save(data);
         }
+    }
+
+    @PostMapping("role/{idRole}")
+    public User createWithRole(@PathVariable String idRole, @RequestBody User data) {
+        String encryptedPassword = Utils.encryptSHA256(data.getPassword());
+        data.setPassword(encryptedPassword);
+        Role role = this.roleRepository.findById(idRole).orElse(null);
+        data.setRole(role);
+        return this.userRepository.save(data);
     }
 
     @ResponseStatus(HttpStatus.OK)
@@ -76,7 +100,7 @@ public class UserController {
 
     @ResponseStatus(HttpStatus.OK)
     @PostMapping("auth")
-    public void auth(@RequestBody AuthInfo data) {
+    public User auth(@RequestBody AuthInfo data) {
         List<User> users = this.userRepository.findByUsername(data.getUsername());
         if(users.size() > 0) {
             User currentUser = users.get(0);
@@ -84,10 +108,21 @@ public class UserController {
                 /*
                 camino feliz -> la contraseña que nos enviaron es la misma de la base de datos
                  */
-                return;
+                return currentUser;
             }
         }
         throw new AuthErrorException();
+    }
+
+    @PutMapping("{id}/role/{idRole}")
+    public User setRole(@PathVariable String id, @PathVariable String idRole) {
+        User user = this.userRepository.findById(id).orElse(null);
+        Role role = this.roleRepository.findById(idRole).orElse(null);
+        if (user == null || role == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        }
+        user.setRole(role);
+        return this.userRepository.save(user);
     }
 }
 
