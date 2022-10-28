@@ -1,11 +1,13 @@
 package tutorial.mintic.security.repositories;
 
+import org.springframework.data.mongodb.repository.Aggregation;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
 import tutorial.mintic.security.models.Role;
 import tutorial.mintic.security.models.User;
 
 import java.util.List;
+import java.util.Map;
 
 
 public interface UserRepository extends MongoRepository<User, String> {
