@@ -8,7 +8,6 @@ import tutorial.mintic.security.models.Permission;
 import tutorial.mintic.security.repositories.PermissionRepository;
 
 import java.util.List;
-import java.util.Locale;
 
 @RestController
 @RequestMapping("permissions")

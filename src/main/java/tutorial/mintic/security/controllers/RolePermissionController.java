@@ -1,5 +1,6 @@
 package tutorial.mintic.security.controllers;
 
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -44,8 +45,8 @@ public class RolePermissionController {
         if (role == null || permission == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         }
-        boolean exist = this.checkIfAlreadyExists(role, permission);
-        if (exist) {
+        RolePermission exist = this.rolePermissionRepository.findByRoleAndPermission(role.get_id(), permission.get_id());
+        if (exist != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
         } else {
             RolePermission rolePermission = new RolePermission(role, permission);
@@ -108,7 +109,7 @@ public class RolePermissionController {
 
     @GetMapping("permission/{idPermission}")
     public List<RolePermission> getAllByPermission(@PathVariable String idPermission) {
-        Permission permission = this.permissionRepository.findById(idPermission).orElseThrow(()->
+        Permission permission = this.permissionRepository.findById(idPermission).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND)
         );
         return this.rolePermissionRepository.findByPermission(permission);
@@ -118,12 +119,37 @@ public class RolePermissionController {
     public void getByRoleAndPermission(@PathVariable String idRole, @PathVariable String idPermission) {
         Role role = this.roleRepository.findById(idRole).orElse(null);
         Permission permission = this.permissionRepository.findById(idPermission).orElse(null);
-        if(role == null || permission == null) {
+        if (role == null || permission == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
         boolean exist = this.checkIfAlreadyExists(role, permission);
-        if(!exist) {
+        if (!exist) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
+    }
+
+    @PostMapping("validate/role/{idRole}")
+    public RolePermission validatePermission(@PathVariable String idRole, @RequestBody InfoPermission info) {
+        Permission permission = this.permissionRepository.findPermission(info.getUrl(), info.getMethod());
+        Role role = this.roleRepository.findById(idRole).orElse(null);
+        if (role == null || permission == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        RolePermission rolePermission = this.rolePermissionRepository.findByRoleAndPermission(role.get_id(), permission.get_id());
+        if (rolePermission == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+        return rolePermission;
+    }
+}
+
+@Data
+class InfoPermission {
+    private String url;
+    private String method;
+
+    public InfoPermission(String url, String method) {
+        this.url = url;
+        this.method = method;
     }
 }

@@ -26,7 +26,13 @@ public class RoleController {
 
     @PostMapping
     public Role create(@RequestBody Role data) {
-        return this.roleRepository.save(data);
+        Role previousRole = this.roleRepository.findByName(data.getName());
+        if (previousRole == null) {
+            return this.roleRepository.save(data);
+        } else {
+            previousRole.setDescription(data.getDescription());
+            return this.roleRepository.save(previousRole);
+        }
     }
 
     @PutMapping("{id}")

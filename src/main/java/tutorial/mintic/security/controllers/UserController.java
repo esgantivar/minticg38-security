@@ -38,13 +38,13 @@ public class UserController {
         upsert - > update or insert
          */
         Role role = null;
-        if(idRole.isPresent()) {
+        if (idRole.isPresent()) {
             role = this.roleRepository.findById(idRole.get()).orElse(null);
         }
         String encryptedPassword = Utils.encryptSHA256(data.getPassword());
         data.setPassword(encryptedPassword);
         List<User> users = this.userRepository.findByUsername(data.getUsername());
-        if(users.size() > 0) {
+        if (users.size() > 0) {
             User currentUser = users.get(0);
             currentUser.setEmail(data.getEmail());
             currentUser.setPassword(data.getPassword());
@@ -102,12 +102,10 @@ public class UserController {
     @PostMapping("auth")
     public User auth(@RequestBody AuthInfo data) {
         List<User> users = this.userRepository.findByUsername(data.getUsername());
-        if(users.size() > 0) {
+        if (users.size() > 0) {
             User currentUser = users.get(0);
-            if(data.matchPassword(currentUser)) {
-                /*
-                camino feliz -> la contraseña que nos enviaron es la misma de la base de datos
-                 */
+            if (data.matchPassword(currentUser)) {
+                currentUser.setPassword("");
                 return currentUser;
             }
         }
@@ -138,6 +136,7 @@ class AuthErrorException extends RuntimeException {
 @ResponseStatus(HttpStatus.BAD_REQUEST)
 class PasswordNotMatchException extends RuntimeException {
 }
+
 class AuthInfo {
     private String username;
     private String password;

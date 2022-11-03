@@ -10,8 +10,9 @@ import java.util.List;
 
 public interface RolePermissionRepository extends MongoRepository<RolePermission, String> {
     List<RolePermission> findByRole(Role role);
+
     List<RolePermission> findByPermission(Permission permission);
 
-    @Query("{'role.$id': ?0, 'permission.$id': ?1}")
-    List<RolePermission> customQuery(String role, String permission);
+    @Query("{'role.$id': ObjectId(?0), 'permission.$id': ObjectId(?1)}")
+    RolePermission findByRoleAndPermission(String role, String permission);
 }
